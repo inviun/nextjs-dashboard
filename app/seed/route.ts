@@ -5,7 +5,6 @@ import { invoices, customers, revenue, users } from '../lib/placeholder-data';
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
 async function seedUsers() {
-  await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -30,7 +29,6 @@ async function seedUsers() {
 }
 
 async function seedInvoices() {
-  await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS invoices (
@@ -56,7 +54,6 @@ async function seedInvoices() {
 }
 
 async function seedCustomers() {
-  await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS customers (
@@ -100,18 +97,24 @@ async function seedRevenue() {
 
   return insertedRevenue;
 }
-
 export async function GET() {
   try {
-    const result = await sql.begin((sql) => [
-      seedUsers(),
-      seedCustomers(),
-      seedInvoices(),
-      seedRevenue(),
-    ]);
+    await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
 
-    return Response.json({ message: 'Database seeded successfully' });
+    await seedUsers();
+    await seedCustomers();
+    await seedInvoices();
+    await seedRevenue();
+
+    return Response.json({
+      message: 'Database seeded successfully',
+    });
   } catch (error) {
-    return Response.json({ error }, { status: 500 });
+    console.error('Database seeding failed:', error);
+
+    return Response.json(
+      { error: 'Database seeding failed. Check the server logs.' },
+      { status: 500 },
+    );
   }
 }
